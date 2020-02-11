@@ -1,0 +1,65 @@
+---
+title: "Econometrics Quiz 1"
+---
+
+Load Data
+```{r}
+library(readxl)
+library(data.table)
+
+data.full <- as.data.table(read_excel("bank.xlsx"))
+```
+
+Question 2
+```{r}
+data.male <- data.full[gender == 1]   # Subset by gender = 1 (male)
+data.rich.male <- data.full[gender == 1 & salary > 30000]
+```
+
+Question 3
+```{r}
+mean(data.full$salary)
+unname(quantile(data.full$salary, probs = 0.75) - quantile(data.full$salary, probs = 0.25))
+quantile(data.full$salary, 0.675)
+
+```
+
+Question 4
+```{r}
+library(moments)
+sd(data.full$salbegin)
+skewness(data.full$salbegin)
+kurtosis(data.full$salbegin)
+
+# Histogram
+p <- ggplot(data = data.full, mapping = aes(x = salbegin))
+p + geom_histogram()
+```
+
+Question 5
+```{r}
+cov(data.full)
+cor(data.full)
+```
+
+Question 6
+```{r}
+model1 <- lm(salary ~ educ, data = data.full)
+model2 <- lm(salary ~ salbegin, data = data.full)
+model3 <- lm(salary ~ educ + salbegin, data = data.full)
+
+summary(model1)
+summary(model2)
+summary(model3)
+anova(model3, model2)  # Run an F test to see whether the reduced model (model2) is better.
+                       # Reject null, so Educ is significantly different from 0.
+
+# part iii
+new <- data.frame(educ = mean(data.full$educ), salbegin = mean(data.full$salbegin))
+predict(model3, newdata = new)
+
+# part iv
+plot(model3)
+
+```
+

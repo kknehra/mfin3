@@ -1,0 +1,76 @@
+---
+title: "Econometrics Lab 2"
+---
+
+Load Data
+```{r}
+library(readxl)
+library(data.table)
+
+data.full <- as.data.table(read_excel("ceosal2.xlsx"))
+```
+
+Exercise 7 - Multiple Regression
+```{r}
+summary(data.full)
+
+library(ggplot2)
+p <- ggplot(data = data.full)
+
+# Histograms
+p + geom_histogram(aes(x = SALARY))
+p + geom_histogram(aes(x = MKTVAL))
+p + geom_histogram(aes(x = SALES))
+p + geom_histogram(aes(x = CEOTEN))
+
+# Scatter plots
+plot(data.full)
+
+# 1) Salary ~ Sales
+model1 <- lm(SALARY ~ SALES, data = data.full)
+summary(model1)
+
+# 2) Salary ~ Sales + Mktval
+model2 <- lm(SALARY ~ SALES + MKTVAL, data = data.full)
+summary(model2)
+
+# 3) Salary ~ Sales + Mktval + Ceoten
+model3 <- lm(SALARY ~ SALES + MKTVAL + CEOTEN, data = data.full)
+summary(model3)
+
+# Prediction
+new <- data.frame(CEOTEN = 10, SALES = 1000, MKTVAL = 2000)
+predict(model3, newdata = new)
+```
+
+
+Exercise 8 - Robust Estimation
+```{r}
+library(sandwich)
+library(lmtest)
+library(car)
+
+# Hubert White Robust Regression
+vcv <- vcovHC(model3, type = "HC1")
+coeftest(model3, vcv)
+```
+
+Exercise 9 - Hypothesis Testing
+```{r}
+# Sales = 0
+waldtest(model3, .~. - SALES, vcov=vcv)
+linearHypothesis(model3, "SALES = 0", white.adjust = "hc1")
+
+# Ceoten = 10
+hyp = c(0, 0, 0, 1)
+rhs = c(10)
+linearHypothesis(model3, hyp, rhs, white.adjust = "hc1")
+# Alternatively:
+linearHypothesis(model3, "CEOTEN = 10", white.adjust = "hc1")
+
+# Confidence Interval
+library(Greg)
+confint_robust(model3, HC_type = "HC1", t_distribution = TRUE, level = 0.95)
+
+```
+

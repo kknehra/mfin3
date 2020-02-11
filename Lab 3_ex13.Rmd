@@ -1,0 +1,92 @@
+---
+title: "Econometrics Lab 3 Question 2"
+---
+
+Load Data
+```{r}
+library(readxl)
+library(data.table)
+
+data.full <- as.data.table(read_excel("ex13.xlsx"))
+summary(data.full)
+```
+
+Load packages
+```{r}
+library(tidyverse)
+library(caret)
+library(car)
+library(sandwich)
+library(lmtest)
+```
+
+Exercise 13
+(i) Correlation matrix of X1, X2 and X3
+```{r}
+cor(data.full[,c("x1", "x2", "x3")])
+```
+
+(ii) Y ~ X1 + X2
+```{r}
+fit1 <- lm(y ~ x1 + x2, data = data.full)
+summary(fit1)
+
+# Robust Regression
+vcv1 <- vcovHC(fit1, type = "HC1")
+coeftest(fit1, vcv1)
+waldtest(fit1, .~. - x1 - x2, vcov=vcv1) # Reject Null
+
+# Centered VIF
+vif(fit1)
+
+# Uncentered VIF
+# ??????
+
+### Regress with x2
+fit1a <- lm(y ~ x2, data = data.full)
+summary(fit1a)
+
+# Robust Regression again...
+vcv1a <- vcovHC(fit1a, type = "HC1")
+coeftest(fit1a, vcv1a)
+waldtest(fit1a, .~. - x2, vcov=vcv1a)
+
+```
+
+(iii) z ~ x2 + x3
+```{r}
+fit2 <- lm(z ~ x2 + x3, data = data.full)
+summary(fit2)
+
+# Robust Regression again...
+vcv2 <- vcovHC(fit2, type = "HC1")
+coeftest(fit2, vcv2)
+waldtest(fit2, .~. - x2 - x3, vcov=vcv2) # Reject Null
+
+# Centered VIF
+vif(fit2)
+
+# Uncentered VIF
+# ???
+
+### Regress with x3
+fit2a <- lm(z ~ x2, data = data.full)
+summary(fit2a)
+
+# Robust Regression again...
+vcv2a <- vcovHC(fit2a, type = "HC1")
+coeftest(fit2a, vcv2a)
+waldtest(fit2a, .~. - x2, vcov=vcv2a)
+
+```
+
+Exercise 15
+```{r}
+# (i) Fit model
+fit1 <- lm(y ~ x1 + x2, data = data.full)
+
+# Diagnostic plots
+plot(fit1)
+
+```
+

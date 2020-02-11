@@ -1,0 +1,130 @@
+---
+title: "Econometrics Lab 3"
+---
+
+Load Data
+```{r}
+library(readxl)
+library(data.table)
+
+data.full <- as.data.table(read_excel("ceosal2.xlsx"))
+```
+
+Exercise 12
+```{r}
+library(MASS)
+library(sandwich)   #For Huber White adjusted covariance matrix
+library(lmtest)
+library(car)        #For doing the Huber White adjusted F test
+library(Greg)
+
+#########################################################
+# First model
+# with Sales, Mktval, Ceoten
+#########################################################
+ols <- lm(SALARY~SALES+MKTVAL+CEOTEN, data = data.full)
+summary(ols)
+anova(ols)
+
+# Huber White Robust Regression
+vcv <- vcovHC(ols, type = "HC1")
+coeftest(ols, vcv)
+waldtest(ols, .~. - SALES - MKTVAL - CEOTEN, vcov=vcv) # Reject Null
+
+```
+
+(iii) Try more variables...
+```{r}
+#########################################################
+# Second Model
+# with Sales, Mktval, Ceoten, Profits, Profmarg, Comten, Age
+#########################################################
+ols2 <- lm(SALARY ~ SALES + MKTVAL + CEOTEN + PROFITS + PROFMARG + COMTEN + AGE, data = data.full)
+summary(ols2)
+anova(ols, ols2)
+
+# Testing profit and profmarg
+linearHypothesis(ols2, c("PROFITS = 0", "PROFMARG = 0"), white.adjust = "hc1") # Cannot reject Null
+
+```
+
+(iv) Remove Profits and ProfMarg
+```{r}
+#########################################################
+# Third Model
+# with Sales, Mktval, Ceoten, Comten, Age
+#########################################################
+ols3 <- lm(SALARY ~ SALES + MKTVAL + CEOTEN + COMTEN + AGE, data = data.full)
+summary(ols3)
+
+# Testing Comten and Age
+linearHypothesis(ols3, c("COMTEN = 0", "AGE = 0"), white.adjust = "hc1") # Cannot reject null
+
+### Try StepAIC ###
+stepAIC(ols2)   # Gives same result: Sales, Mktval, Ceoten
+
+```
+
+Final model
+```{r}
+#########################################################
+# Final Model
+# with Sales, Mktval, Ceoten
+#########################################################
+ols.final <- lm(SALARY ~ SALES + MKTVAL + CEOTEN, data = data.full)
+
+# Testing Sales = Mktval
+linearHypothesis(ols.final, c("SALES = MKTVAL"), white.adjust = "hc1", test = "F")  
+# Cannot reject null, so Sales = Mktval
+
+# Confidence Interval
+confint(ols.final, level = 0.95)
+# Huber White Conf Int
+confint_robust(ols.final, HC_type = "HC1", t_distribution = TRUE, level = 0.95)
+```
+
+Exercise 14
+```{r}
+# Fit 2 models
+model1 <- lm(SALARY ~ SALES + MKTVAL + CEOTEN, data = data.full)
+model2 <- lm(SALARY ~ SALES + MKTVAL + CEOTEN + PROFITS, data = data.full)
+
+# Summary of models
+summary(model1)
+summary(model2)  # MKTVAL and PROFITS became insignificant... lower adj. R2 as well.
+
+drop1(model2, test = "F") # Dropping PROFITS gives a better AIC
+
+# Correlation
+cor(data.full$MKTVAL, data.full$PROFITS) # 0.918
+
+# VIF from car
+vif(model2)
+
+# VIF from mctest
+library(mctest)
+imcdiag(data.full[,c("SALES","MKTVAL","CEOTEN","PROFITS")], data.full$SALARY, method = "VIF", vif = 5, corr=T) 
+# Same result as car
+```
+
+
+
+
+```{r}
+# Try to replicate according to EViews documentation
+# http://www.eviews.com/help/helpintro.html#page/content%2Ftesting-Coefficient_Diagnostics.html%23ww182212
+
+# Var-Cov matrix of betas
+vcv <- vcovHC(model2, type = "HC1")
+# Extract variance of betas
+diag(vcv)
+
+# Uncentered VIF of b_Sales
+## According to EViews documentation
+## the ratio of the variance of the coefficient estimate from the original equation 
+## divided by the variance from a coefficient estimate from an equation with only one regressor (and no constant)
+diag(vcv)[2]/vcovHC(lm(SALARY~SALES-1, data = data.full), type = "HC1") 
+# 1.505...
+```
+
+

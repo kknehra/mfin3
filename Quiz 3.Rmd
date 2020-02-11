@@ -1,0 +1,110 @@
+---
+title: "Econometrics Quiz 3"
+---
+
+Load Data
+```{r}
+library(readxl)
+library(data.table)
+
+data.full <- as.data.table(read_excel("homes1.xlsx"))
+```
+
+Load packages
+```{r}
+library(car)       
+library(ggplot2)
+```
+
+Section 1 - part I
+```{r}
+#########################################################
+# Data Exploration
+#########################################################
+
+summary(data.full)
+
+p <- ggplot(data = data.full)
+
+# Histograms - continuous
+p + geom_histogram(mapping = aes(x=price))  # Price looks bimodal... but okay. Symmetric enough.
+p + geom_histogram(mapping = aes(x=size)) # Size looks normally distributed with an outlier
+p + geom_histogram(mapping = aes(x=age)) # Age is quite skewed to the right.
+
+# Histograms - categorical
+p + geom_histogram(mapping = aes(x=bed))  # Mostly 3 bedrooms
+p + geom_histogram(mapping = aes(x=garage)) # Mostly 2 garages
+
+# Scatter plot matrix
+scatterplotMatrix(~price+age+size, data=data.full, smooth=FALSE)
+
+```
+
+II & III - Model
+```{r}
+model1 <- lm(price ~ size + bed + age + garage, data = data.full)
+summary(model1)
+
+plot(model1)
+# Some heteroskedasticity
+# Residuals look normally distributed
+# Some horizontal outliers
+
+# b0 = 180.29, b_size = 69.96, b_bed=-23.28, b_age=0.363, b_garage=21.64
+# price drops as number of bedroom increases...?
+# house worth more as it gets older...?
+
+# Some diagnostics
+AIC(model1) # 832
+summary(model1)$adj.r.squared # .1638
+
+```
+
+IV & V - Look at the coefficients further
+```{r}
+#### Age
+plot(data.full$age, data.full$price)
+abline(lm(price~age, data=data.full))
+# The fitted line is very flat.
+# Implying that the information in age is not really contributing to the variation of price.
+# The points seem to look non-linear too.
+
+### Bed
+plot(data.full$bed, data.full$price)
+abline(lm(price~bed, data=data.full))
+# Sample bias?
+
+```
+
+VI - Hypothesis Testing
+```{r}
+
+# Size = Bed
+linearHypothesis(model1, "size=bed", white.adjust = "hc1") # Reject null at 5%, so size not equal bed
+
+# Bed = Garage
+linearHypothesis(model1, "garage=bed", white.adjust = "hc1") # Reject null at 0.1%, so garage not equal bed
+
+# Size = Garage
+linearHypothesis(model1, "garage=size", white.adjust = "hc1") # Cannot reject null.
+```
+
+VII - Model with age^2
+```{r}
+model2 <- lm(price ~ size + bed + garage + age + I(age*age), data = data.full)
+summary(model2)
+
+# Some diagnostics
+AIC(model2) # 823, lower than AIC(model1)
+summary(model2)$adj.r.squared # .2598
+anova(model1, model2) # F test significant at 1%, so reject null. Therefore, age^2 is significant.
+
+# All measures show that the model with age^2 performs better
+# If we look at the scatter plot of price vs age...
+ggplot(data.full, aes(x=age, y=price)) + geom_point() + geom_smooth()
+
+# Age somehow shows a second order effect on price - newer and older houses tend to be worth more; 
+# whereas houses whose age is in the middle are worth less relatively.
+
+```
+

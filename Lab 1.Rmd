@@ -1,0 +1,44 @@
+---
+title: "Econometrics Lab 1"
+---
+
+Run this line if you haven't installed the packages
+```{r}
+install.packages(c("readxl", "MASS", "sandwich", "lmtest", "car", "Greg"))
+```
+
+Load Data
+```{r}
+library(readxl)
+library(data.table)
+
+data.full <- as.data.table(read_excel("ceosal1.xlsx"))
+```
+
+Exercise 3, 4, 5 - Inspection of data
+```{r}
+summary(data.full)
+
+# Scatter plots of selected variables
+pairs(data.full[,c(1,3,4,5)], lower.panel = NULL)
+plot(data.full[,c("ROE", "SALARY")])
+```
+
+Exercise 6 - Regression anlaysis
+```{r}
+# Regress SALARY on ROE
+fit1 <- lm(SALARY ~ ROE, data = data.full)
+summary(fit1)
+
+# Predict Salary with ROE = 30
+new.roe <- data.frame(ROE = 30)
+predict(fit1, newdata = new.roe)
+
+# Create a scatter plot with regression line
+library(ggplot2)
+
+p <- ggplot(data = data.full, mapping = aes(x = ROE, y = SALARY))
+p + geom_point() + geom_smooth(method = "lm")
+
+```
+

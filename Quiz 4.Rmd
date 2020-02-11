@@ -1,0 +1,85 @@
+---
+title: "Econometrics Quiz 4"
+---
+
+Load Data
+```{r}
+library(readxl)
+library(data.table)
+
+rlms <- as.data.table(read_excel("rlms.xlsx"))
+```
+
+Question (a)
+```{r}
+library(ggplot2)
+library(mctest)
+
+# Examine data
+summary(rlms)
+sapply(rlms, class)
+
+# Data exploration
+scatterplotMatrix(~PAY + AGE + HEIGHT + EXPER, data=rlms, smooth=FALSE)
+
+
+p <- ggplot(data = rlms)
+
+# AGE
+p + geom_histogram(aes(x = AGE)) 
+
+# EDYRS
+p + geom_bar(aes(x = EDYRS))
+
+# HEIGHT
+p + geom_histogram(aes(x = HEIGHT))
+
+# PAY
+p + geom_density(aes(x = PAY))
+
+# EXPER
+p + geom_density(aes(x = EXPER))
+
+# MALE
+p + geom_bar(aes(x = MALE))
+
+# Fitting the model
+model1 <- lm(PAY ~ AGE + EXPER + EDYRS + HEIGHT, data = rlms)
+summary(model1)
+
+vcv <- vcovHC(model1, type = "HC1")
+coeftest(model1, vcv)
+
+# Residual plots
+plot(model1)
+
+# Testing multicollinearity
+imcdiag(rlms[,c("AGE","EDYRS","HEIGHT","EXPER")], rlms$PAY, method = "VIF", vif = 5, corr=T, all=T) 
+vif(model1)
+```
+
+Question (b)
+```{r}
+linearHypothesis(model1, c("AGE = 0", "EXPER = 0"), white.adjust = "hc1")
+
+library(MASS)
+stepAIC(model1)
+
+# PAY ~ EDYRS + HEIGHT
+
+```
+
+Question (c)
+```{r}
+model.final <- lm(PAY ~ EDYRS + HEIGHT, data = rlms)
+summary(model.final)
+
+anova(model.final, model1)
+# anova(reduced, full) - null hypothesis: coefficients in reduced model are zero
+```
+
+Question (d)
+```{r}
+model.male <- lm(PAY ~ EDYRS + HEIGHT + MALE, data = rlms)
+summary(model.male)
+```

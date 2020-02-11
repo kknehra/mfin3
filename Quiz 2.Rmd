@@ -1,0 +1,48 @@
+---
+title: "Econometrics Quiz 2"
+---
+
+Load Data
+```{r}
+library(readxl)
+library(data.table)
+
+data.full <- as.data.table(read_excel("zagat2.xlsx"))
+```
+
+Question 1 - Estimation
+```{r}
+model1 <- lm(Cost ~ Food + Decor + Service, data = data.full)
+summary(model1)
+
+# Robust regression...
+library(sandwich)
+library(lmtest)
+library(car)
+
+vcv <- vcovHC(model1, type = "HC1")
+coeftest(model1, vcv)
+
+# Conf Int
+confint_robust(model1, HC_type = "HC1", t_distribution = TRUE, level = 0.95)
+
+# New data and its residual
+new = data.frame(Food = 22, Decor = 18, Service = 21)
+cost.predicted <- predict(model1, newdata = new)
+41 - cost.predicted
+
+# Compare food vs (decor & service)
+model2 <- lm(Cost ~ Food, data = data.full)
+model3 <- lm(Cost ~ Decor + Service, data = data.full)
+
+summary(model2) # R2 = .2245
+summary(model3) # R2 = .5966
+
+# Residual plots
+plot(model1)
+# 1) Slightly heteroscedastic
+# 2) Residuals roughtly normal, except observations 196, 159, 153...
+# 3) Obs 153 is vertically influential; Obs 23 is horizontally influential.
+
+```
+

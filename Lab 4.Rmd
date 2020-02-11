@@ -1,0 +1,106 @@
+---
+title: "Econometrics Lab 4"
+---
+
+Load Data
+```{r}
+library(readxl)
+library(data.table)
+
+ceosal1 <- as.data.table(read_excel("ceosal1.xlsx"))
+ceosal2 <- as.data.table(read_excel("ceosal2.xlsx"))
+```
+
+Exercise 16
+```{r}
+library(MASS)
+library(sandwich)   #For Huber White adjusted covariance matrix
+library(lmtest)
+library(car)        #For doing the Huber White adjusted F test
+library(Greg)
+
+# Add a new column
+ceosal1[, ROE2 := ROE^2]
+
+# Fit a model with a quadratic term of ROE^2
+model1 <- lm(SALARY~SALES+ROE+ROE2, data = ceosal1)
+summary(model1)
+
+# Huber White Robust Regression
+vcv <- vcovHC(model1, type = "HC1")
+coeftest(model1, vcv)
+waldtest(model1, .~. - SALES - ROE - ROE2, vcov=vcv) # Reject Null, so the model is significant
+
+# Check VIF
+library(mctest)
+imcdiag(ceosal1[,c("SALES","ROE","ROE2")], ceosal1$SALARY, method = "VIF", vif = 5, corr=T) 
+cor(ceosal1$ROE, ceosal1$ROE2) #0.952
+
+# Check coefficients of ROE and ROE2
+waldtest(model1, .~. - ROE - ROE2, vcov=vcv) 
+linearHypothesis(model1, c("ROE = 0","ROE2 = 0"), white.adjust = "hc1") # Alternative way to test it
+
+```
+
+Exercise 17 - Log-log model
+```{r}
+llmodel <- lm(LSALARY ~ LSALES + LMKTVAL + CEOTEN, data = ceosal2)
+summary(llmodel)
+
+vcvll <- vcovHC(llmodel, type = "HC1")
+coeftest(llmodel, vcvll)
+waldtest(llmodel, .~. - LSALES - LMKTVAL - CEOTEN, vcov=vcvll)
+
+# prediction
+new <- data.frame(LSALES = log(5000), LMKTVAL = log(10000), CEOTEN = 10)
+exp(predict(llmodel, new))
+```
+
+Exercise 18 - Log-linear model
+```{r}
+llmodel2 <- lm(LSALARY ~ SALES + MKTVAL + CEOTEN, data = ceosal2)
+summary(llmodel2)
+
+vcvll2 <- vcovHC(llmodel2, type = "HC1")
+coeftest(llmodel2, vcvll2)
+waldtest(llmodel2, .~. - SALES - MKTVAL - CEOTEN, vcov=vcvll2)
+
+# prediction
+new <- data.frame(SALES = 5000, MKTVAL = 10000, CEOTEN = 10)
+exp(predict(llmodel2, new))
+
+# likelihood ratio test 
+lrtest(llmodel, llmodel2)  # Model 1 has a higher log likelihood, significant at 0.1%
+```
+
+Exercise 19 - Linear-log model
+```{r}
+llmodel3 <- lm(SALARY ~ LSALES + LMKTVAL + CEOTEN, data = ceosal2)
+summary(llmodel3)
+
+vcvll3 <- vcovHC(llmodel3, type = "HC1")
+coeftest(llmodel3, vcvll3)
+waldtest(llmodel3, .~. - LSALES - LMKTVAL - CEOTEN, vcov=vcvll3)
+
+# prediction
+new <- data.frame(LSALES = log(5000), LMKTVAL = log(10000), CEOTEN = 10)
+predict(llmodel3, new)
+
+# AIC 
+AIC(llmodel3)
+AIC(model1) ## you can only compare models with the same Y
+```
+
+Exercise 20 - Interaction
+```{r}
+model.int <- lm(SALARY ~ SALES * MKTVAL, data = ceosal2)
+summary(model.int)
+
+vcv4 <- vcovHC(model.int, type = "HC1")
+coeftest(model.int, vcv4)
+waldtest(model.int, .~. - SALES*MKTVAL, vcov=vcv4)
+
+```
+
+
+
