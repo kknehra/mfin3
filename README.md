@@ -18,7 +18,7 @@ Judge Business School, University of Cambridge
 - You need to install R itself (the binary) - [Link](https://cloud.r-project.org/)
 - You need to install RStudio (the programming editor and interface to R) - [Link](https://rstudio.com/products/rstudio/download/#download)
 
-### Running Solutions (Awaiting first solutions to be posted as of 11<sup>th</sup> Feb 2020...)
+### Running Solutions
 
 - Each solution is in its own appropriately named file
 - Each file uses a series of packages which will need to be installed - if you're using RStudio you will be prompted to install these automatically
